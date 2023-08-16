@@ -2,23 +2,10 @@ use std::{ffi::c_void, ops::Deref};
 
 use lean_sys::{
     lean_alloc_external, lean_apply_1, lean_external_class, lean_get_external_class,
-    lean_get_external_data, lean_inc, lean_is_exclusive, lean_object,
+    lean_get_external_data, lean_inc, lean_is_exclusive, lean_object, lean_register_external_class,
 };
 
 use crate::{Layout, Obj, TObj, TObjRef};
-
-// TODO: move this to lean_sys
-
-type LeanExternalForeachProc =
-    Option<unsafe extern "C" fn(data: *mut c_void, closure: *mut lean_object)>;
-type LeanExternalFinalizeProc = Option<unsafe extern "C" fn(data: *mut c_void)>;
-
-extern "C" {
-    fn lean_register_external_class(
-        finalize: LeanExternalFinalizeProc,
-        foreach: LeanExternalForeachProc,
-    ) -> *mut lean_external_class;
-}
 
 pub trait AsExternalObj: Clone + 'static {
     type ObjIter<'a>: Iterator<Item = &'a Obj>;
