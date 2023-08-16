@@ -5,7 +5,7 @@ use lean_sys::{
     lean_get_external_data, lean_inc, lean_is_exclusive, lean_object,
 };
 
-use crate::{Layout, Obj, ObjRef, TObj, TObjRef};
+use crate::{Layout, Obj, TObj, TObjRef};
 
 // TODO: move this to lean_sys
 
@@ -21,7 +21,7 @@ extern "C" {
 }
 
 pub trait AsExternalObj: Clone + 'static {
-    type ObjIter<'a>: Iterator<Item = ObjRef<'a>>;
+    type ObjIter<'a>: Iterator<Item = &'a Obj>;
     fn obj_iter(&self) -> Self::ObjIter<'_>;
 
     unsafe extern "C" fn foreach(data: *mut c_void, closure: *mut lean_object) {
@@ -96,7 +96,7 @@ impl<T: AsExternalObj> Deref for TObj<External<T>> {
 impl<T: AsExternalObj> Deref for TObjRef<'_, External<T>> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(lean_get_external_data(self.obj_ref.0) as *mut T) }
+        unsafe { &*(lean_get_external_data(self.obj) as *mut T) }
     }
 }
 

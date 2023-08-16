@@ -1,4 +1,4 @@
-use core::{marker::PhantomData, ops::Deref};
+use std::{marker::PhantomData, ops::Deref};
 
 use super::*;
 
@@ -22,8 +22,8 @@ pub struct TObj<A: ?Sized> {
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct TObjRef<'a, A: ?Sized> {
-    pub(crate) obj_ref: ObjRef<'a>,
-    val: PhantomData<A>,
+    pub(crate) obj: ObjPtr,
+    val: PhantomData<&'a A>,
 }
 
 impl<A: ?Sized> Clone for TObj<A> {
@@ -37,7 +37,10 @@ impl<A: ?Sized> Clone for TObj<A> {
 
 impl<A: ?Sized> TObjRef<'_, A> {
     pub fn to_owned(self) -> TObj<A> {
-        unsafe { TObj::from_obj(self.obj_ref.to_owned()) }
+        unsafe {
+            lean_inc(self.obj);
+            TObj::from_raw(self.obj)
+        }
     }
 }
 
@@ -50,9 +53,6 @@ impl<A: ?Sized> TObj<A> {
     }
     pub const unsafe fn from_raw(obj: ObjPtr) -> Self {
         Self::new(Obj(obj))
-    }
-    pub const unsafe fn from_obj(obj: Obj) -> Self {
-        Self::new(obj)
     }
     pub fn into_obj(self) -> Obj {
         self.obj
@@ -68,7 +68,7 @@ impl<A: ?Sized> TObj<A> {
     }
     pub fn as_ref(&self) -> TObjRef<'_, A> {
         TObjRef {
-            obj_ref: self.obj.as_ref(),
+            obj: self.obj.0,
             val: PhantomData,
         }
     }
