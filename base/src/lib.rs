@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
+pub mod external;
 pub mod typed;
 use lean_sys::*;
 pub use typed::*;

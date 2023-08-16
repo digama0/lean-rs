@@ -15,14 +15,14 @@ pub trait Layout {
 
 #[repr(transparent)]
 pub struct TObj<A: ?Sized> {
-    obj: Obj,
+    pub(crate) obj: Obj,
     val: PhantomData<A>,
 }
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct TObjRef<'a, A: ?Sized> {
-    obj: ObjPtr,
+    pub(crate) obj: ObjPtr,
     val: PhantomData<&'a A>,
 }
 
@@ -36,6 +36,12 @@ impl<A: ?Sized> Clone for TObj<A> {
 }
 
 impl<A: ?Sized> TObjRef<'_, A> {
+    pub const unsafe fn from_raw(obj: ObjPtr) -> Self {
+        Self {
+            obj,
+            val: PhantomData,
+        }
+    }
     pub fn to_owned(self) -> TObj<A> {
         unsafe {
             lean_inc(self.obj);
