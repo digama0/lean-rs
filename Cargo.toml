@@ -1,0 +1,21 @@
+[package]
+name = "lean-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# [profile.release]
+# debug = true
+
+[dependencies]
+lean-sys = { git = "https://github.com/digama0/lean-sys.git", version = "0.0.3" }
+lean-base = { path = "./base", version = "0.1.0" }
+
+[features]
+
+[workspace]
+members = [
+  "base",
+  "build"
+]
