@@ -36,6 +36,12 @@ impl<A: ?Sized> Clone for TObj<A> {
 }
 
 impl<A: ?Sized> TObjRef<'_, A> {
+    pub const unsafe fn from_raw(obj: ObjPtr) -> Self {
+        Self {
+            obj,
+            val: PhantomData,
+        }
+    }
     pub fn to_owned(self) -> TObj<A> {
         unsafe {
             lean_inc(self.obj);
