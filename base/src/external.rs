@@ -88,16 +88,10 @@ impl<T: AsExternalObj> Deref for TObjRef<'_, External<T>> {
 }
 
 impl<T: AsExternalObj> TObj<External<T>> {
-    pub fn mutate<F: for<'a> FnOnce(&'a mut T)>(self, class: &ExternalClass<T>, f: F) -> Self {
-        unsafe {
-            if lean_is_exclusive(self.obj.0) {
-                f(&mut *(lean_get_external_data(self.obj.0) as *mut T));
-                self
-            } else {
-                let cloned = class.create((*self).clone());
-                f(&mut *(lean_get_external_data(cloned.obj.0) as *mut T));
-                cloned
-            }
+    pub fn make_mut(&mut self, class: &ExternalClass<T>) -> &mut T {
+        if !unsafe { lean_is_exclusive(self.obj.0) } {
+            *self = class.create((**self).clone());
         }
+        unsafe { &mut *(lean_get_external_data(self.obj.0) as *mut T) }
     }
 }
