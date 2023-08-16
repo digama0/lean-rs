@@ -1,12 +1,19 @@
 #![allow(clippy::missing_safety_doc)]
-
+pub mod external;
 pub mod typed;
+use std::marker::PhantomData;
+
 use lean_sys::*;
 pub use typed::*;
 
 pub type ObjPtr = *mut lean_object;
 #[repr(transparent)]
 pub struct Obj(pub ObjPtr);
+
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct ObjRef<'a>(pub ObjPtr, PhantomData<&'a ()>);
+
 impl Drop for Obj {
     fn drop(&mut self) {
         unsafe { lean_dec(self.0) }
@@ -42,6 +49,10 @@ impl Obj {
         p
     }
 
+    pub fn as_ref(&self) -> ObjRef<'_> {
+        ObjRef(self.0, PhantomData)
+    }
+
     pub unsafe fn ctor<const N: usize, T>(tag: u8, args: [Obj; N], scalars: T) -> Obj {
         let o = Obj(lean_alloc_ctor(
             tag.into(),
@@ -63,6 +74,15 @@ impl Obj {
             &*lean_string_cstr(self.0),
             lean_string_size(self.0) - 1,
         ))
+    }
+}
+
+impl ObjRef<'_> {
+    pub fn to_owned(self) -> Obj {
+        unsafe {
+            lean_inc(self.0);
+            Obj(self.0)
+        }
     }
 }
 
