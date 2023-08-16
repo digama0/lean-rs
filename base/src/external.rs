@@ -5,7 +5,7 @@ use lean_sys::{
     lean_get_external_data, lean_inc, lean_is_exclusive, lean_object,
 };
 
-use crate::{Layout, Obj, ObjRef, TObj};
+use crate::{Layout, Obj, ObjRef, TObj, TObjRef};
 
 // TODO: move this to lean_sys
 
@@ -90,6 +90,13 @@ impl<T: AsExternalObj> Deref for TObj<External<T>> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { &*(lean_get_external_data(self.obj.0) as *mut T) }
+    }
+}
+
+impl<T: AsExternalObj> Deref for TObjRef<'_, External<T>> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(lean_get_external_data(self.obj_ref.0) as *mut T) }
     }
 }
 

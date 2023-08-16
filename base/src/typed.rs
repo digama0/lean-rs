@@ -22,7 +22,7 @@ pub struct TObj<A: ?Sized> {
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct TObjRef<'a, A: ?Sized> {
-    obj_ref: ObjRef<'a>,
+    pub(crate) obj_ref: ObjRef<'a>,
     val: PhantomData<A>,
 }
 
