@@ -2,58 +2,34 @@ use std::{ffi::c_void, ops::Deref};
 
 use lean_sys::{
     lean_alloc_external, lean_apply_1, lean_external_class, lean_get_external_class,
-    lean_get_external_data, lean_inc, lean_is_exclusive, lean_object, lean_register_external_class,
+    lean_get_external_data, lean_inc, lean_is_exclusive, lean_object,
 };
 
 use crate::{Layout, Obj, TObj, TObjRef};
 
-pub trait AsExternalObj: Clone + 'static {
-    type ObjIter<'a>: Iterator<Item = &'a Obj>;
-    fn obj_iter(&self) -> Self::ObjIter<'_>;
-
-    unsafe extern "C" fn foreach(data: *mut c_void, closure: *mut lean_object) {
-        let data = data as *mut Self;
-        for i in (*data).obj_iter() {
-            lean_inc(i.0);
-            lean_inc(closure);
-            lean_apply_1(closure, i.0);
-        }
-    }
-
-    unsafe extern "C" fn finalize(data: *mut c_void) {
-        let data = data as *mut Self;
-        drop(Box::from_raw(data));
-    }
-
-    fn register() -> ExternalClass<Self> {
-        let class =
-            unsafe { lean_register_external_class(Some(Self::finalize), Some(Self::foreach)) };
-        ExternalClass {
-            class,
-            _type: std::marker::PhantomData,
-        }
-    }
+pub unsafe trait Iterable {
+    fn foreach<F: Fn(&Obj)>(&self, _f: F) {}
 }
 
-#[repr(transparent)]
-pub struct ExternalClass<T: AsExternalObj> {
-    class: *mut lean_external_class,
-    _type: std::marker::PhantomData<T>,
+pub unsafe trait AsExternalObj: Iterable + Clone + 'static {
+    const CLASS: lean_external_class = lean_external_class {
+        m_foreach: Some(foreach::<Self>),
+        m_finalize: Some(finalize::<Self>),
+    };
 }
 
-impl<T: AsExternalObj> ExternalClass<T> {
-    pub fn class(&self) -> *mut lean_external_class {
-        self.class
-    }
-    pub fn create(&self, data: T) -> TObj<External<T>> {
-        let data = Box::new(data);
-        let data = Box::into_raw(data);
-        let external = External {
-            class: self.class,
-            data,
-        };
-        unsafe { TObj::new(External::pack_obj(external)) }
-    }
+unsafe extern "C" fn foreach<T: Iterable>(data: *mut c_void, closure: *mut lean_object) {
+    let data = data as *mut T;
+    (*data).foreach(|obj| {
+        lean_inc(obj.0);
+        lean_inc(closure);
+        lean_apply_1(closure, obj.0);
+    });
+}
+
+unsafe extern "C" fn finalize<T>(data: *mut c_void) {
+    let data = data as *mut T;
+    drop(Box::from_raw(data));
 }
 
 pub struct External<T: AsExternalObj> {
@@ -87,10 +63,19 @@ impl<T: AsExternalObj> Deref for TObjRef<'_, External<T>> {
     }
 }
 
+impl<T: AsExternalObj> From<T> for TObj<External<T>> {
+    fn from(value: T) -> Self {
+        let data = Box::into_raw(Box::new(value));
+        let class = &T::CLASS as *const _ as *mut _;
+        let external = External { data, class };
+        external.pack()
+    }
+}
+
 impl<T: AsExternalObj> TObj<External<T>> {
-    pub fn make_mut(&mut self, class: &ExternalClass<T>) -> &mut T {
+    pub fn make_mut(&mut self) -> &mut T {
         if !unsafe { lean_is_exclusive(self.obj.0) } {
-            *self = class.create((**self).clone());
+            *self = (**self).clone().into();
         }
         unsafe { &mut *(lean_get_external_data(self.obj.0) as *mut T) }
     }
