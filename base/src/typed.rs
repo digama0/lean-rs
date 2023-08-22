@@ -19,12 +19,19 @@ pub struct TObj<A: ?Sized> {
     val: PhantomData<A>,
 }
 
-#[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct TObjRef<'a, A: ?Sized> {
     pub(crate) obj: ObjPtr,
     val: PhantomData<&'a A>,
 }
+
+impl<'a, A: ?Sized> Clone for TObjRef<'a, A> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, A: ?Sized> Copy for TObjRef<'a, A> {}
 
 impl<A: ?Sized> Clone for TObj<A> {
     fn clone(&self) -> Self {
