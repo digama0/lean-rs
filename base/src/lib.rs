@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 #![cfg_attr(feature = "nightly", feature(fn_traits, unboxed_closures))]
+
 pub mod closure;
 pub mod external;
 pub mod typed;
