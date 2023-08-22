@@ -9,3 +9,4 @@ edition = "2021"
 lean-sys = { git = "https://github.com/digama0/lean-sys.git", version = "0.0.3" }
 
 [features]
+nightly = []
