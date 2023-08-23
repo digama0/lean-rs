@@ -213,6 +213,66 @@ impl Layout for bool {
     }
 }
 
+impl Layout for usize {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_usize(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_usize(o.into_raw())
+    }
+}
+
+impl Layout for u64 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_uint64(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_uint64(o.into_raw())
+    }
+}
+
+impl Layout for u32 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_uint32(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_uint32(o.into_raw())
+    }
+}
+
+impl Layout for u16 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box(layout as usize))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox(o.into_raw()) as u16
+    }
+}
+
+impl Layout for u8 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box(layout as usize))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox(o.into_raw()) as u8
+    }
+}
+
+impl Layout for f64 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_float(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_float(o.into_raw())
+    }
+}
+
 pub struct Environment {
     pub const_to_mod_idx: Obj,
     pub constants: Obj,
@@ -259,3 +319,65 @@ pub struct Name;
 pub struct Module;
 pub struct Options;
 pub struct Import;
+
+#[cfg(test)]
+pub(crate) mod test {
+    use super::*;
+
+    /// Initialize lean_runtime at each thread exactly once
+    pub fn initialize_thread_local_runtime() {
+        thread_local! {
+            static INITIALIZED: std::sync::Once = std::sync::Once::new();
+        }
+        INITIALIZED.with(|x| {
+            x.call_once(|| unsafe {
+                lean_sys::lean_initialize_runtime_module();
+            })
+        });
+    }
+
+    #[test]
+    fn test_u8() {
+        initialize_thread_local_runtime();
+        for i in u8::MIN..u8::MAX {
+            let o = i.pack();
+            assert_eq!(o.unpack(), i);
+        }
+    }
+
+    #[test]
+    fn test_u16() {
+        initialize_thread_local_runtime();
+        for i in 0..16 {
+            let o = (1u16 << i).pack();
+            assert_eq!(o.unpack(), (1u16 << i));
+        }
+    }
+
+    #[test]
+    fn test_u32() {
+        initialize_thread_local_runtime();
+        for i in 0..32 {
+            let o = (1u32 << i).pack();
+            assert_eq!(o.unpack(), (1u32 << i));
+        }
+    }
+
+    #[test]
+    fn test_u64() {
+        initialize_thread_local_runtime();
+        for i in 0..64 {
+            let o = (1u64 << i).pack();
+            assert_eq!(o.unpack(), (1u64 << i));
+        }
+    }
+
+    #[test]
+    fn test_usize() {
+        initialize_thread_local_runtime();
+        for i in 0..usize::BITS {
+            let o = (1usize << i).pack();
+            assert_eq!(o.unpack(), (1usize << i));
+        }
+    }
+}
