@@ -273,6 +273,14 @@ impl Layout for f64 {
     }
 }
 
+impl Layout for () {
+    unsafe fn pack_obj(_: Self) -> Obj {
+        Obj(lean_box(0))
+    }
+
+    unsafe fn unpack_obj(_: Obj) -> Self {}
+}
+
 pub struct Environment {
     pub const_to_mod_idx: Obj,
     pub constants: Obj,
@@ -319,6 +327,29 @@ pub struct Name;
 pub struct Module;
 pub struct Options;
 pub struct Import;
+
+impl Layout for Obj {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        layout
+    }
+
+    unsafe fn unpack_obj(layout: Obj) -> Self {
+        layout
+    }
+}
+
+impl<T: ?Sized> Layout for TObj<T> {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        layout.into_obj()
+    }
+
+    unsafe fn unpack_obj(layout: Obj) -> Self {
+        Self {
+            obj: layout,
+            val: PhantomData,
+        }
+    }
+}
 
 #[cfg(test)]
 pub(crate) mod test {
