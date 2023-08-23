@@ -78,39 +78,42 @@ macro_rules! __count {
 }
 
 #[macro_export]
-macro_rules! lean_closure {
-    ( [ $($cap_name:ident : $cap_type:ty),* $(,)? ] | | -> $ret_type:ty $body:block )  => {
-        $crate::lean_closure!(
-            [ $($cap_name : $cap_type),* ] | _unit : () | -> $ret_type $body
-        )
+macro_rules! __lean_closure_function {
+    ( $ret_type:ty, $body:block, () ) => {
+        unsafe extern "C" fn __lean_closure_function(_ : *mut lean_sys::lean_object) -> $crate::Obj {
+            let ret_val : $ret_type = $body;
+            <$ret_type as  $crate::Layout>::pack_obj(ret_val)
+        }
     };
+    ( $ret_type:ty, $body:block, ($($arg_name:ident : $arg_type:ty),+ $(,)? ) ) => {
+        unsafe extern "C" fn __lean_closure_function(
+                $($arg_name : *mut lean_sys::lean_object),+
+        ) -> $crate::Obj {
+            $(let $arg_name = <$arg_type as $crate::Layout>::unpack_obj($crate::Obj($arg_name));)+
+            let ret_val : $ret_type = $body;
+            <$ret_type as $crate::Layout>::pack_obj(ret_val)
+        }
+    };
+}
+#[macro_export]
+macro_rules! lean_closure {
     ( [ $($cap_name:ident : $cap_type:ty),* $(,)? ] || -> $ret_type:ty $body:block ) => {
         $crate::lean_closure!(
-            [ $($cap_name : $cap_type),* ] | _unit : () | -> $ret_type $body
+            [ $($cap_name : $cap_type),* ] | | -> $ret_type $body
         )
     };
-    ( [ $($cap_name:ident : $cap_type:ty),* $(,)? ] -> $ret_type:ty $body:block ) => {
-        $crate::lean_closure!(
-            [ $($cap_name : $cap_type),* ] | _unit : () | -> $ret_type $body
-        )
-    };
-    ( [ $($cap_name:ident : $cap_type:ty),* $(,)? ] | $($arg_name:ident : $arg_type:ty),+ $(,)? | -> $ret_type:ty $body:block ) => {
+    ( [ $($cap_name:ident : $cap_type:ty),* $(,)? ] | $($arg_name:ident : $arg_type:ty),* $(,)? | -> $ret_type:ty $body:block ) => {
         {
-            unsafe extern "C" fn __lean_plain_closure($($cap_name : *mut lean_sys::lean_object,)* $($arg_name : *mut lean_sys::lean_object,)+)
-                -> $crate::Obj {
-                $(let $cap_name = <$cap_type as $crate::Layout>::unpack_obj($crate::Obj($cap_name));)*
-                $(let $arg_name = <$arg_type as $crate::Layout>::unpack_obj($crate::Obj($arg_name));)*
-                let ret_val : $ret_type = $body;
-                <$ret_type as  $crate::Layout>::pack_obj(ret_val)
-            }
-            const __ARITY : usize = $crate::__count!($($arg_name)*) + $crate::__count!($($cap_name)*);
+            $crate::__lean_closure_function!($ret_type, $body, ($($cap_name : $cap_type,)* $($arg_name : $arg_type,)*));
+            const __ARG : usize = ($crate::__count!($($arg_name)*));
             const __FIXED : usize = $crate::__count!($($cap_name)*);
+            const __ARITY : usize = if __ARG == 0 { 1 + __FIXED } else { __ARG + __FIXED };
             unsafe {
                 let captures : [$crate::Obj; __FIXED]  = [
                     $(<$cap_type as $crate::Layout>::pack_obj($cap_name),)*
                 ];
                 let closure = lean_sys::lean_alloc_closure(
-                    __lean_plain_closure as *mut ::core::ffi::c_void,
+                    __lean_closure_function as *mut ::core::ffi::c_void,
                     __ARITY as u32,
                     __FIXED as u32,
                 );
@@ -152,16 +155,12 @@ mod test {
         initialize_thread_local_runtime();
         for x in [true, false] {
             for y in [true, false] {
-                for a in [true, false] {
-                    for b in [true, false] {
-                        let closure = lean_closure! {
-                            [x : bool, y : bool] | a : bool, b : bool | -> bool {
-                            x || y || a || b
-                        }};
-                        let res: bool = closure.invoke(a, b);
-                        assert_eq!(res, x || y || a || b)
-                    }
-                }
+                let closure = lean_closure! {
+                    [x : bool, y : bool] || -> bool {
+                    x || y
+                }};
+                let res: bool = closure.invoke();
+                assert_eq!(res, x || y)
             }
         }
     }

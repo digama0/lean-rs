@@ -278,9 +278,7 @@ impl Layout for () {
         Obj(lean_box(0))
     }
 
-    unsafe fn unpack_obj(_: Obj) -> Self {
-        ()
-    }
+    unsafe fn unpack_obj(_: Obj) -> Self {}
 }
 
 pub struct Environment {
