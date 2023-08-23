@@ -72,7 +72,7 @@ impl Obj {
 pub const NIL: ObjPtr = lean_box(0);
 
 pub unsafe fn io<T: ?Sized>(res: TObj<IoResult<T>>) -> Result<TObj<T>, Obj> {
-    match res.clone().unpack() {
+    match res.unpack() {
         IoResult::Ok(val) => Ok(val),
         IoResult::Err(res) => Err(res),
     }

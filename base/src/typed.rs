@@ -213,6 +213,56 @@ impl Layout for bool {
     }
 }
 
+impl Layout for usize {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_usize(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_usize(o.into_raw())
+    }
+}
+
+impl Layout for u64 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_uint64(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_uint64(o.into_raw())
+    }
+}
+
+impl Layout for u32 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_uint32(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_uint32(o.into_raw())
+    }
+}
+
+impl Layout for u8 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box(layout as usize))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox(o.into_raw()) as u8
+    }
+}
+
+impl Layout for f64 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box_float(layout))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox_float(o.into_raw())
+    }
+}
+
 pub struct Environment {
     pub const_to_mod_idx: Obj,
     pub constants: Obj,
