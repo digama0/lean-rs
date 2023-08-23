@@ -330,6 +330,29 @@ pub struct Module;
 pub struct Options;
 pub struct Import;
 
+impl Layout for Obj {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        layout
+    }
+
+    unsafe fn unpack_obj(layout: Obj) -> Self {
+        layout
+    }
+}
+
+impl<T: ?Sized> Layout for TObj<T> {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        layout.into_obj()
+    }
+
+    unsafe fn unpack_obj(layout: Obj) -> Self {
+        Self {
+            obj: layout,
+            val: PhantomData,
+        }
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
