@@ -319,3 +319,63 @@ pub struct Name;
 pub struct Module;
 pub struct Options;
 pub struct Import;
+
+#[cfg(test)]
+pub(crate) mod test {
+    use super::*;
+
+    /// Initialize lean_runtime at each thread exactly once
+    pub fn initialize_thread_local_runtime() {
+        thread_local! {
+            static INITIALIZED : std::sync::Once = std::sync::Once::new();
+        }
+        INITIALIZED.with(|x| {
+            x.call_once(|| unsafe {
+                lean_sys::lean_initialize_runtime_module();
+            })
+        });
+    }
+
+    #[test]
+    fn test_u8() {
+        for i in u8::MIN..u8::MAX {
+            let o = i.pack();
+            assert_eq!(o.unpack(), i);
+        }
+    }
+
+    #[test]
+    fn test_u16() {
+        for i in 0..16 {
+            let o = (1u16 << i).pack();
+            assert_eq!(o.unpack(), (1u16 << i));
+        }
+    }
+
+    #[test]
+    fn test_u32() {
+        initialize_thread_local_runtime();
+        for i in 0..32 {
+            let o = (1u32 << i).pack();
+            assert_eq!(o.unpack(), (1u32 << i));
+        }
+    }
+
+    #[test]
+    fn test_u64() {
+        initialize_thread_local_runtime();
+        for i in 0..64 {
+            let o = (1u64 << i).pack();
+            assert_eq!(o.unpack(), (1u64 << i));
+        }
+    }
+
+    #[test]
+    fn test_usize() {
+        initialize_thread_local_runtime();
+        for i in 0..usize::BITS {
+            let o = (1usize << i).pack();
+            assert_eq!(o.unpack(), (1usize << i));
+        }
+    }
+}
