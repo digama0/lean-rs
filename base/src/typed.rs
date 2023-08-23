@@ -327,7 +327,7 @@ pub(crate) mod test {
     /// Initialize lean_runtime at each thread exactly once
     pub fn initialize_thread_local_runtime() {
         thread_local! {
-            static INITIALIZED : std::sync::Once = std::sync::Once::new();
+            static INITIALIZED: std::sync::Once = std::sync::Once::new();
         }
         INITIALIZED.with(|x| {
             x.call_once(|| unsafe {
@@ -338,6 +338,7 @@ pub(crate) mod test {
 
     #[test]
     fn test_u8() {
+        initialize_thread_local_runtime();
         for i in u8::MIN..u8::MAX {
             let o = i.pack();
             assert_eq!(o.unpack(), i);
@@ -346,6 +347,7 @@ pub(crate) mod test {
 
     #[test]
     fn test_u16() {
+        initialize_thread_local_runtime();
         for i in 0..16 {
             let o = (1u16 << i).pack();
             assert_eq!(o.unpack(), (1u16 << i));
