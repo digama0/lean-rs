@@ -243,6 +243,16 @@ impl Layout for u32 {
     }
 }
 
+impl Layout for u16 {
+    unsafe fn pack_obj(layout: Self) -> Obj {
+        Obj(lean_box(layout as usize))
+    }
+
+    unsafe fn unpack_obj(o: Obj) -> Self {
+        lean_unbox(o.into_raw()) as u16
+    }
+}
+
 impl Layout for u8 {
     unsafe fn pack_obj(layout: Self) -> Obj {
         Obj(lean_box(layout as usize))
