@@ -273,6 +273,16 @@ impl Layout for f64 {
     }
 }
 
+impl Layout for () {
+    unsafe fn pack_obj(_: Self) -> Obj {
+        Obj(lean_box(0))
+    }
+
+    unsafe fn unpack_obj(_: Obj) -> Self {
+        ()
+    }
+}
+
 pub struct Environment {
     pub const_to_mod_idx: Obj,
     pub constants: Obj,
