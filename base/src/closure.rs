@@ -164,4 +164,21 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn type_with_allocations() {
+        initialize_thread_local_runtime();
+        for x in 0..10 {
+            for y in 0xFFFFFFE0..0xFFFFFFFF {
+                for z in 0..64 {
+                    let closure = lean_closure! {
+                        [x : usize, y : usize] | z : usize | -> usize {
+                        (x * y) ^ z
+                    }};
+                    let res: usize = closure.invoke(1 << z);
+                    assert_eq!(res, (x * y) ^ (1 << z))
+                }
+            }
+        }
+    }
 }
