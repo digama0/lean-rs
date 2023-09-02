@@ -17,5 +17,6 @@ lean-base = { path = "./base", version = "0.1.0" }
 [workspace]
 members = [
   "base",
-  "build"
+  "build",
+  "tests/lean-tests",
 ]

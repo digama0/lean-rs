@@ -1,0 +1,8 @@
+/build
+/lake-packages/*
+lake-manifest.json
+lake-packages
+
+# Added by cargo
+
+/target
