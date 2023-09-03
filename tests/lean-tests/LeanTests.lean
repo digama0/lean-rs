@@ -1,3 +1,3 @@
 
 @[extern "lean_test_list_sum"]
-opaque listSum : List USize → USize
+opaque listSum : @List USize → USize
