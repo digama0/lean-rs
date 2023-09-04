@@ -6,9 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lean-sys = { git = "https://github.com/digama0/lean-sys.git", version = "0.0.3", default-features = false }
+lean-sys = { git = "https://github.com/digama0/lean-sys.git", version = "0.0.3", default-features = false, features = ["small_allocator"]}
 
 [features]
 nightly = []
-small_allocator = ["lean-sys/small_allocator"]
-default = ["small_allocator"]
+static = ["lean-sys/static"]
