@@ -1,0 +1,54 @@
+name: Build
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Initialize Lean
+        run: |
+          wget https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -O elan-init.sh
+          bash elan-init.sh -y
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      - name: Initialize Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+      - name: Run cargo build (release)
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --verbose
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args:  --all -- --deny warnings
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
+      - name: Run cargo test (release)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release --verbose
